@@ -1,0 +1,9 @@
+{
+  "id": "yzj",
+  "channels": ["yzj"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "@openclaw/yzj",
+  "version": "2026.3.6",
+  "type": "module",
+  "description": "OpenClaw YZJ (Yunzhijia) intelligent bot channel plugin",
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "yzj",
+      "label": "YZJ Robot",
+      "selectionLabel": "YZJ Robot (plugin)",
+      "detailLabel": "YZJ Robot",
+      "docsPath": "/channels/yzj",
+      "docsLabel": "yzj",
+      "blurb": "YunZiJia intelligent bot via HTTP API + webhooks with streaming support.",
+      "aliases": [
+        "yunzhijia",
+        "yzj",
+        "云之家",
+        "云之家机器人"
+      ],
+      "order": 90
+    },
+    "install": {
+      "npmSpec": "@openclaw/yzj",
+      "localPath": "extensions/yzj",
+      "defaultChoice": "npm"
+    }
+  },
+  "clawdbot": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "yzj",
+      "label": "YZJ Robot",
+      "selectionLabel": "YZJ Robot (plugin)",
+      "detailLabel": "YZJ Robot",
+      "docsPath": "/channels/yzj",
+      "docsLabel": "yzj",
+      "blurb": "YunZiJia intelligent bot via HTTP API + webhooks with streaming support.",
+      "aliases": [
+        "yunzhijia",
+        "yzj",
+        "云之家",
+        "云之家机器人"
+      ],
+      "order": 90
+    },
+    "install": {
+      "npmSpec": "@openclaw/yzj",
+      "localPath": "extensions/yzj",
+      "defaultChoice": "npm"
+    }
+  },
+  "peerDependencies": {
+    "openclaw": "*",
+    "clawdbot": "*"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts"
+    },
+    "./src/*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts"
+    }
+  }
+}

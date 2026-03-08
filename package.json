@@ -54,8 +54,7 @@
     }
   },
   "peerDependencies": {
-    "openclaw": "*",
-    "clawdbot": "*"
+    "openclaw": ">=2026.2.24"
   },
   "dependencies": {
     "zod": "^4.3.6"

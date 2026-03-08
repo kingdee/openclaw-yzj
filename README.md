@@ -6,6 +6,7 @@
 
 - **HTTP API 集成**：通过云之家 API 发送消息
 - **Webhook 接收**：接收云之家机器人的消息推送
+- **主动发消息**：支持主动向指定用户发送消息（通过 OpenID 指定接收者）
 - **OpenClaw HTTP 处理器**：使用 OpenClaw 内置的 HTTP 处理器（Node.js 原生 http 模块）
 - **多账户支持**：支持配置多个云之家机器人账户
 - **完整类型支持**：TypeScript 类型安全
@@ -294,10 +295,23 @@ curl -X POST http://localhost:3000/yzj/webhook \
 
 OpenClaw 通过云之家 API 发送消息：
 
+**基本格式**：
 ```typescript
 {
   "msgtype": 2,     // 消息类型（2=文本）
   "content": "您好！有什么可以帮助您的吗？"
+}
+```
+
+**带指定接收者**（主动发消息）：
+```typescript
+{
+  "msgtype": 2,
+  "content": "这是一条主动推送的消息",
+  "notifyParams": [{
+    "type": "openIds",
+    "values": ["user_openid_123"]  // 指定接收者的 OpenID
+  }]
 }
 ```
 
@@ -474,6 +488,7 @@ channels:
 - ✅ 私聊消息（DM）
 - ✅ 群聊消息
 - ✅ 文本消息发送
+- ✅ 主动消息推送（通过 OpenID 指定接收者）
 - ✅ 多账户管理
 
 **不支持的功能：**
@@ -721,6 +736,7 @@ interface YZJOutgoingMessage {
 - 目前仅支持文本消息
 - 不支持流式响应（云之家 API 限制）
 - 消息大小限制：1MB
+- 主动发消息需要获取用户的 OpenID
 
 ## 与 WeCom 插件的对比
 

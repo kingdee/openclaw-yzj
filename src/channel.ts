@@ -143,28 +143,40 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
     deliveryMode: "direct",
     chunkerMode: "text",
     textChunkLimit: 20480,
-    sendText: async (target, text) => {
-      // 从 target 中获取 send_msg_url
-      const { send_msg_url } = target as any;
+    chunker: (text, limit) => {
+      return [text];
+    },
+    sendText: async ({ cfg, to, text, accountId, replyToId, threadId }) => {
+      const logPrefix = `[yzj][outbound][${accountId || "default"}]`;
 
-      if (!send_msg_url) {
+      // 从账户配置获取 sendMsgUrl
+      const account = resolveYZJAccount({ cfg: cfg as OpenclawConfig, accountId });
+      const sendMsgUrl = account.sendMsgUrl;
+
+      if (!sendMsgUrl) {
+        console.error(`${logPrefix} sendMsgUrl not configured`);
         return {
           channel: "yzj",
           ok: false,
           messageId: "",
-          error: new Error("Missing send_msg_url in target"),
+          error: new Error("sendMsgUrl not configured"),
         };
       }
 
-      try {
-        // 构建 YZJ 消息负载
-        const payload = {
-          msgtype: 2, // MessageType.TEXT
-          content: text,
-        };
+      const payload = {
+        msgtype: 2, // MessageType.TEXT
+        content: text,
+      };
 
-        // 发送 HTTP POST 请求
-        const response = await fetch(send_msg_url, {
+      if (to) {
+        payload['notifyParams'] = [{
+          type: "openIds",
+          values: [to]
+        }];
+      }
+
+      try {
+        const response = await fetch(sendMsgUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -172,22 +184,25 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
           body: JSON.stringify(payload),
         });
 
+        console.info(`${logPrefix} response status: ${response.status} ${response.statusText}`);
+
         if (response.ok) {
           return {
             channel: "yzj",
             ok: true,
-            messageId: String(Date.now()),
           };
         } else {
-          const errorText = await response.text();
+          const errorText = `HTTP ${response.status}`;
+          console.error(`${logPrefix} ${errorText}`);
           return {
             channel: "yzj",
             ok: false,
             messageId: "",
-            error: new Error(`HTTP ${response.status}: ${errorText}`),
+            error: new Error(errorText),
           };
         }
       } catch (error) {
+        console.error(`${logPrefix} send message failed:`, error);
         return {
           channel: "yzj",
           ok: false,
@@ -195,6 +210,9 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
           error: error instanceof Error ? error : new Error(String(error)),
         };
       }
+    },
+    sendMedia: async ({ cfg, to, text, mediaUrl, accountId }) => {
+      throw new Error("YZJ outbound error");
     },
   },
   status: {

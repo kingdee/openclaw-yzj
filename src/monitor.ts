@@ -125,7 +125,7 @@ async function startAgentForInbound(
     To: `yzj:${robotId}`,
     SessionKey: route.sessionKey,
     AccountId: route.accountId,
-    ChatType: 'direct',
+    ChatType: 'group',
     ConversationLabel: `user:${operatorOpenid}`,
     SenderName: operatorName,
     SenderId: operatorOpenid,

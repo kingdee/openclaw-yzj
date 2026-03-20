@@ -15,6 +15,7 @@ const accountSchema = {
     sendMsgUrl: { type: "string" },
     webhookPath: { type: "string" },
     timeout: { type: "number" },
+    inboundMode: { type: "string", enum: ["webhook", "websocket"] },
     secret: { type: "string" },
   },
   required: ["sendMsgUrl"],
@@ -31,6 +32,7 @@ export const yzjConfigSchema: ChannelConfigSchema = {
       sendMsgUrl: { type: "string" },
       webhookPath: { type: "string", default: "/yzj/webhook" },
       timeout: { type: "number", default: 10 },
+      inboundMode: { type: "string", enum: ["webhook", "websocket"], default: "webhook" },
       defaultAccount: { type: "string" },
       accounts: {
         type: "object",

@@ -19,8 +19,11 @@ import {
 import { listYZJAccountIds, resolveDefaultYZJAccountId, resolveYZJAccount } from "./accounts.js";
 import { yzjConfigSchema } from "./config-schema.js";
 import type { ResolvedYZJAccount } from "./types.js";
+import { clearInboundState } from "./inbound-dispatcher.js";
 import { registerYZJWebhookTarget } from "./monitor.js";
 import { yzjOnboardingAdapter } from "./onboarding.js";
+import { deriveYZJWebSocketUrl } from "./ws-url.js";
+import { YZJWebSocketClient } from "./websocket-client.js";
 
 const meta = {
   id: "yzj",
@@ -87,7 +90,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
       deleteAccountFromConfigSection({
         cfg: cfg as OpenclawConfig,
         sectionKey: "yzj",
-        clearBaseFields: ["name", "sendMsgUrl", "webhookPath", "timeout"],
+        clearBaseFields: ["name", "sendMsgUrl", "webhookPath", "timeout", "inboundMode"],
         accountId,
       }),
     isConfigured: (account) => account.configured,
@@ -227,6 +230,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
       configured: snapshot.configured ?? false,
       running: snapshot.running ?? false,
       webhookPath: snapshot.webhookPath ?? null,
+      inboundMode: (snapshot as any).inboundMode ?? null,
       lastStartAt: snapshot.lastStartAt ?? null,
       lastStopAt: snapshot.lastStopAt ?? null,
       lastError: snapshot.lastError ?? null,
@@ -242,6 +246,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
       enabled: account.enabled,
       configured: account.configured,
       webhookPath: account.webhookPath ?? "/yzj/webhook",
+      inboundMode: account.inboundMode,
       running: runtime?.running ?? false,
       lastStartAt: runtime?.lastStartAt ?? null,
       lastStopAt: runtime?.lastStopAt ?? null,
@@ -267,29 +272,84 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
         return;
       }
 
+      let websocketUrl = "";
+      if (account.inboundMode === "websocket") {
+        try {
+          websocketUrl = deriveYZJWebSocketUrl(account.sendMsgUrl);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          ctx.log?.error(`[${account.accountId}] invalid websocket config: ${errorMessage}`);
+          ctx.setStatus({
+            accountId: account.accountId,
+            running: false,
+            configured: true,
+            lastError: errorMessage,
+            webhookPath: account.webhookPath ?? "/yzj/webhook",
+          });
+          await waitForAbortSignal(ctx.abortSignal);
+          return;
+        }
+      }
+
       const path = (account.webhookPath ?? "/yzj/webhook").trim();
+      const logger = {
+        info: (message: string) => ctx.log?.info?.(message),
+        warn: (message: string) => ctx.log?.warn?.(message),
+        error: (message: string) => ctx.log?.error?.(message),
+      };
       const unregister = registerYZJWebhookTarget({
         account,
         config: ctx.cfg as OpenclawConfig,
-        runtime: ctx.runtime,
-        core: ({} as unknown) as any,
+        runtime: logger,
         path,
-        statusSink: (patch) => ctx.setStatus({ accountId: ctx.accountId, ...patch }),
+        statusSink: (patch) => ctx.setStatus({ accountId: account.accountId, ...patch }),
       });
+      const websocketClient = account.inboundMode === "websocket"
+        ? new YZJWebSocketClient({
+            url: websocketUrl,
+            target: {
+              account,
+              config: ctx.cfg as OpenclawConfig,
+              runtime: logger,
+              statusSink: (patch) => ctx.setStatus({ accountId: account.accountId, ...patch }),
+            },
+            logger,
+            onReady: () => {
+              ctx.setStatus({
+                accountId: account.accountId,
+                running: true,
+                lastError: null,
+              });
+            },
+            onDegraded: (message) => {
+              ctx.setStatus({
+                accountId: account.accountId,
+                running: false,
+                lastError: message,
+              });
+            },
+          })
+        : null;
 
       try {
         ctx.log?.info(`[${account.accountId}] YZJ webhook registered at ${path}`);
         ctx.setStatus({
           accountId: account.accountId,
-          running: true,
+          running: account.inboundMode === "webhook",
           configured: true,
           webhookPath: path,
+          inboundMode: account.inboundMode,
           lastStartAt: Date.now(),
+          lastError: null,
         });
+
+        websocketClient?.start();
 
         await waitForAbortSignal(ctx.abortSignal);
       } finally {
+        websocketClient?.stop();
         unregister();
+        clearInboundState(account.accountId);
         ctx.setStatus({
           accountId: account.accountId,
           running: false,

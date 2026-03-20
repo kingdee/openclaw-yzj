@@ -1,6 +1,6 @@
 # YZJ Robot Channel Plugin for OpenClaw
 
-云之家（YunZhiJia）群组对话机器人通道插件，通过 HTTP API + Webhook 实现双向消息通信。
+云之家（YunZhiJia）群组对话机器人通道插件，通过 HTTP API + Webhook / WebSocket 实现双向消息通信。
 
 > 📘 **完整教程**：查看 [云之家集成教程](./docs/tutorial.md) 了解如何在公有云上部署 OpenClaw 并集成云之家机器人。
 
@@ -8,6 +8,8 @@
 
 - **HTTP API 集成**：通过云之家 API 发送消息
 - **Webhook 接收**：接收云之家机器人的消息推送
+- **WebSocket 接收**：从 `sendMsgUrl` 自动推导 WebSocket 长连接地址并接收入站消息
+- **双入口去重**：当 Webhook 和 WebSocket 同时收到同一条消息时，按 `msgId` 自动去重
 - **主动发消息**：支持主动向指定用户发送消息（通过 OpenID 指定接收者）
 - **OpenClaw HTTP 处理器**：使用 OpenClaw 内置的 HTTP 处理器（Node.js 原生 http 模块）
 - **多账户支持**：支持配置多个云之家机器人账户
@@ -93,6 +95,8 @@ openclaw gateway restart
 channels:
   yzj:
     enabled: true
+    # 入站模式（可选：webhook | websocket，默认 webhook）
+    inboundMode: "webhook"
     # 发送消息的 API URL（必需）
     sendMsgUrl: "https://www.yunzhijia.com/robot/send"
     # Webhook 路径（可选，默认 /yzj/webhook）
@@ -109,6 +113,8 @@ channels:
     enabled: true
     # 默认账户（可选）
     defaultAccount: "bot1"
+    # 通道级默认入站模式（可被账户覆盖）
+    inboundMode: "websocket"
     # 全局默认配置（可选）
     webhookPath: "/yzj/webhook"
     timeout: 10
@@ -118,6 +124,7 @@ channels:
         name: "生产环境机器人"
         enabled: true
         sendMsgUrl: "https://www.yunzhijia.com/robot/send"
+        inboundMode: "websocket"
         webhookPath: "/yzj/bot1"
         timeout: 10
 
@@ -125,6 +132,7 @@ channels:
         name: "测试环境机器人"
         enabled: true
         sendMsgUrl: "https://test.yunzhijia.com/robot/send"
+        inboundMode: "webhook"
         webhookPath: "/yzj/bot2"
         timeout: 5
 ```
@@ -149,6 +157,7 @@ gateway:
 | `enabled` | boolean | 否 | - | 是否启用该通道 |
 | `name` | string | 否 | - | 通道名称 |
 | `sendMsgUrl` | string | 是* | - | 发送消息的 API URL |
+| `inboundMode` | string | 否 | `webhook` | 入站模式：`webhook` 或 `websocket` |
 | `webhookPath` | string | 否 | `/yzj/webhook` | Webhook 接收路径 |
 | `timeout` | number | 否 | `10` | 请求超时时间（秒） |
 | `defaultAccount` | string | 否 | - | 默认账户 ID |
@@ -163,11 +172,31 @@ gateway:
 | `name` | string | 否 | - | 账户名称 |
 | `enabled` | boolean | 否 | - | 是否启用该账户 |
 | `sendMsgUrl` | string | **是** | - | 发送消息的 API URL |
+| `inboundMode` | string | 否 | 继承通道级配置 | 入站模式：`webhook` 或 `websocket` |
 | `webhookPath` | string | 否 | - | Webhook 接收路径（继承通道级别配置） |
 | `timeout` | number | 否 | - | 请求超时时间（秒，继承通道级别配置） |
 | `secret` | string | 否 | - | 签名验证密钥（配置后自动启用签名验证） |
 
 注：配置 `secret` 后会自动启用签名验证，不配置则不进行签名验证。
+
+## WebSocket 模式
+
+当 `inboundMode: websocket` 时：
+
+- 插件仍然使用 `sendMsgUrl` 发送回复
+- 插件会从 `sendMsgUrl` 中提取 `yzjtoken` 和 host，自动推导 WebSocket 地址
+- `webhookPath` 仍然保留，作为并行兜底入口
+- 两个入口若收到相同 `msgId`，插件只处理一次
+
+示例：
+
+```text
+sendMsgUrl:
+https://dev.kdweibo.cn/gateway/robot/webhook/send?yzjtype=12&yzjtoken=abc
+
+推导得到:
+wss://dev.kdweibo.cn/xuntong/websocket?yzjtoken=abc
+```
 
 ## 签名验证
 
@@ -630,9 +659,7 @@ index.ts (入口)
 
 ```json
 {
-  "dependencies": {
-    "zod": "^4.3.6"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "openclaw": "*",
     "clawdbot": "*"

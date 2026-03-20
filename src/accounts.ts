@@ -8,6 +8,7 @@ import type { OpenclawConfig } from './compat.js';
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from './compat.js';
 
 import type { ResolvedYZJAccount, YZJAccountConfig, YZJConfig } from './types.js';
+import { resolveInboundMode } from './ws-url.js';
 
 /**
  * 列出所有配置的账户ID
@@ -77,6 +78,7 @@ export function resolveYZJAccount(params: {
   const sendMsgUrl = merged.sendMsgUrl?.trim() || '';
   const webhookPath = merged.webhookPath?.trim() || '/yzj/webhook';
   const timeout = merged.timeout ?? 10000;
+  const inboundMode = resolveInboundMode(merged, params.cfg.channels?.yzj as YZJConfig | undefined);
   const configured = Boolean(sendMsgUrl);
 
   return {
@@ -87,6 +89,7 @@ export function resolveYZJAccount(params: {
     sendMsgUrl,
     webhookPath,
     timeout,
+    inboundMode,
     secret: merged.secret,
     config: merged,
   };

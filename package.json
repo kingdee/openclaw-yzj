@@ -56,8 +56,8 @@
   "peerDependencies": {
     "openclaw": ">=2026.2.24"
   },
-  "dependencies": {
-    "zod": "^4.3.6"
+  "scripts": {
+    "test": "node --test --experimental-strip-types test/*.test.ts"
   },
   "files": [
     "index.ts",

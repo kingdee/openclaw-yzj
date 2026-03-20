@@ -8,6 +8,8 @@ import type { ChannelOnboardingAdapter, OpenclawConfig, WizardPrompter } from '.
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from './compat.js';
 
 import { listYZJAccountIds, resolveDefaultYZJAccountId, resolveYZJAccount } from './accounts.js';
+import type { YZJInboundMode } from './types.js';
+import { normalizeYZJWebhookPath } from './onboarding-helpers.js';
 
 const channel = 'yzj' as const;
 
@@ -18,12 +20,17 @@ async function noteYZJConfigHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
       '1) 登录云之家管理后台 → 智能机器人 → 创建机器人',
-      '2) 配置 Webhook URL',
-      '3) 获取发送消息的 URL',
-      '4) 你也可以使用环境变量 YZJ_SEND_MSG_URL',
+      '2) 获取机器人发送消息的 URL（sendMsgUrl）',
+      '3) 选择入站模式：webhook 或 websocket',
+      '4) 若使用 websocket，插件会自动从 sendMsgUrl 推导 WebSocket 地址',
+      '5) 你也可以使用环境变量 YZJ_SEND_MSG_URL',
     ].join('\n'),
     'YZJ 配置说明',
   );
+}
+
+function inboundModeLabel(mode: YZJInboundMode): string {
+  return mode === 'websocket' ? 'WebSocket 长连接（推荐）' : 'Webhook 回调';
 }
 
 /**
@@ -43,7 +50,7 @@ export const yzjOnboardingAdapter: ChannelOnboardingAdapter = {
     return {
       channel,
       configured,
-      statusLines: [`YZJ: ${configured ? '已配置' : '需要配置 sendMsgUrl'}`],
+      statusLines: [`YZJ: ${configured ? '已配置' : '需要配置 sendMsgUrl 和 inboundMode'}`],
       selectionHint: configured ? '已配置' : undefined,
       quickstartScore: configured ? 1 : 5,
     };
@@ -79,6 +86,37 @@ export const yzjOnboardingAdapter: ChannelOnboardingAdapter = {
       await noteYZJConfigHelp(prompter);
     }
 
+    let inboundMode = resolvedAccount.inboundMode;
+    if (resolvedAccount.configured) {
+      const keepInboundMode = await prompter.confirm({
+        message: `当前入站模式为 ${inboundModeLabel(inboundMode)}，是否保留？`,
+        initialValue: true,
+      });
+      if (!keepInboundMode) {
+        inboundMode = String(
+          await prompter.select({
+            message: '选择 YZJ 入站模式',
+            options: [
+              { value: 'websocket', label: inboundModeLabel('websocket') },
+              { value: 'webhook', label: inboundModeLabel('webhook') },
+            ],
+            initialValue: inboundMode,
+          }),
+        ) as YZJInboundMode;
+      }
+    } else {
+      inboundMode = String(
+        await prompter.select({
+          message: '选择 YZJ 入站模式',
+          options: [
+            { value: 'websocket', label: inboundModeLabel('websocket') },
+            { value: 'webhook', label: inboundModeLabel('webhook') },
+          ],
+          initialValue: 'websocket',
+        }),
+      ) as YZJInboundMode;
+    }
+
     // 提示输入 sendMsgUrl
     let sendMsgUrl = resolvedAccount.sendMsgUrl;
     if (!sendMsgUrl) {
@@ -104,21 +142,22 @@ export const yzjOnboardingAdapter: ChannelOnboardingAdapter = {
     }
 
     // 提示输入 webhook 路径
-    let webhookPath = String(
+    const webhookPathHint = inboundMode === 'websocket'
+      ? 'Webhook 路径（兜底入口，可与 websocket 并行接收）'
+      : 'Webhook 路径（用于接收消息回调）';
+    const existingWebhookPath = resolvedAccount.webhookPath || '/yzj/webhook';
+    const webhookPath = normalizeYZJWebhookPath(String(
       await prompter.text({
-        message: 'Webhook 路径（用于接收消息回调）',
-        initialValue: '/yzj/webhook',
+        message: webhookPathHint,
+        initialValue: existingWebhookPath,
         validate: (value) => (value?.trim() ? undefined : '必填'),
       }),
-    ).trim();
-    if (!webhookPath.startsWith('/')) {
-      webhookPath = `/${webhookPath}`;
-    }
+    ));
 
     // 提示输入超时时间
     const timeoutInput = await prompter.text({
       message: '超时时间（毫秒，默认: 10000）',
-      initialValue: '10000',
+      initialValue: String(resolvedAccount.timeout || 10000),
       validate: (value) => {
         if (!value?.trim()) return '必填';
         const num = Number(value.trim());
@@ -140,6 +179,7 @@ export const yzjOnboardingAdapter: ChannelOnboardingAdapter = {
             sendMsgUrl,
             webhookPath,
             timeout,
+            inboundMode,
           },
         },
       };
@@ -159,6 +199,7 @@ export const yzjOnboardingAdapter: ChannelOnboardingAdapter = {
                 sendMsgUrl,
                 webhookPath,
                 timeout,
+                inboundMode,
               },
             },
           },

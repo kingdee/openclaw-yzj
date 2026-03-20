@@ -12,6 +12,8 @@ export enum MessageType {
   TEXT = 2
 }
 
+export type YZJInboundMode = "webhook" | "websocket";
+
 /**
  * YZJ Robot Webhook 接收的消息格式
  */
@@ -75,6 +77,8 @@ export interface YZJAccountConfig {
   webhookPath?: string;
   /** 超时时间（可选，默认 10 秒） */
   timeout?: number;
+  /** 入站模式（可选，默认 webhook） */
+  inboundMode?: YZJInboundMode;
   /** 签名验证密钥（用于验证来自云之家的请求） */
   secret?: string;
 }
@@ -93,6 +97,8 @@ export interface YZJConfig {
   webhookPath?: string;
   /** 超时时间（全局配置） */
   timeout?: number;
+  /** 入站模式默认值（全局配置） */
+  inboundMode?: YZJInboundMode;
   /** 多账户配置 */
   accounts?: Record<string, YZJAccountConfig>;
 }
@@ -115,10 +121,26 @@ export interface ResolvedYZJAccount {
   webhookPath: string;
   /** 超时时间 */
   timeout: number;
+  /** 入站模式 */
+  inboundMode: YZJInboundMode;
   /** 签名验证密钥 */
   secret?: string;
   /** 原始配置 */
   config: YZJAccountConfig;
+}
+
+export interface YZJLogger {
+  info?: (message: string) => void;
+  warn?: (message: string) => void;
+  error?: (message: string) => void;
+  log?: (message: string) => void;
+}
+
+export interface YZJInboundStatusPatch {
+  running?: boolean;
+  lastError?: string | null;
+  lastInboundAt?: number;
+  lastOutboundAt?: number;
 }
 
 /**

@@ -30,7 +30,7 @@
 
 ## 3.OpenClaw与云之家集成
 
-> 由于云之家Channel暂不支持WebSocket长连接（类似飞书），所以如果是本地OpenClaw与云之家的话，需要先通过ngrok将本地OpenClaw暴露到公网，这里以阿里云公网IP OpenClaw举例。
+> 当前插件同时支持 `webhook` 和 `websocket` 两种入站模式。若使用 `websocket`，插件会从机器人回调地址自动推导 WebSocket 长连接地址；若使用 `webhook`，仍需保证 OpenClaw 能被云之家回调访问。这里以阿里云公网 IP OpenClaw 举例。
 
 - 远程连接服务器终端
 
@@ -75,6 +75,11 @@
   ![image-20260308191253884](./imgs/image-20260308191253884.png)
 
   ![image-20260308192706923](./imgs/image-20260308192706923.png)
+
+  > 可以按需选择：
+  >
+  > - `inboundMode: webhook`：仅通过 `webhookPath` 接收入站消息
+  > - `inboundMode: websocket`：插件自动从 `sendMsgUrl` 推导 WebSocket 地址建立长连接，同时保留 `webhookPath` 作为兜底入口
 
 - Save - OpenClaw Gateway会自动重启，待重启成功后
 

@@ -57,7 +57,7 @@ openclaw gateway restart
 如果你已经能在 OpenClaw 的 WebUI 或终端里正常和助手对话，直接告诉 OpenClaw 这几句话就行，OpenClaw 就会自己帮你配好：
 
 ```text
-1. 看一下这个地址：https://github.com/JanonAI/openclaw-yzj
+1. 看一下这个地址：https://github.com/kingdee/openclaw-yzj
 2. 配置 yzj channel，使用 websocket 模式
 3. webhook 地址是：https://www.yunzhijia.com/gateway/robot/webhook/send?yzjtype=0&yzjtoken=xxxxxxxxxxxxxxxxxx
 ```
@@ -65,7 +65,7 @@ openclaw gateway restart
 如果希望它直接通过 ZIP 安装，也可以把第 1 句换成：
 
 ```text
-1. 看一下这个地址：https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip
+1. 看一下这个地址：https://github.com/kingdee/openclaw-yzj/archive/refs/heads/main.zip
 ```
 
 如果当前环境禁止助手执行命令或访问网络，请改用下面的命令行安装方式。
@@ -76,7 +76,7 @@ openclaw gateway restart
 
 ```bash
 # 克隆仓库
-git clone https://github.com/JanonAI/openclaw-yzj.git
+git clone https://github.com/kingdee/openclaw-yzj.git
 
 # 安装插件
 openclaw plugins install ./openclaw-yzj
@@ -88,7 +88,7 @@ openclaw gateway restart
 
 ```bash
 # 下载压缩包
-wget https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip
+wget https://github.com/kingdee/openclaw-yzj/archive/refs/heads/main.zip
 
 # 安装插件（不需要解压）
 openclaw plugins install ./main.zip
@@ -100,7 +100,7 @@ openclaw gateway restart
 
 ```bash
 # 下载压缩包
-curl -L https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/main.zip -o main.zip
+curl -L https://github.com/kingdee/openclaw-yzj/archive/refs/heads/main.zip -o main.zip
 
 # 安装插件（不需要解压）
 openclaw plugins install ./main.zip
@@ -112,10 +112,10 @@ openclaw gateway restart
 
 ```bash
 # 下载特定分支
-wget https://github.com/JanonAI/openclaw-yzj/archive/refs/heads/develop.zip
+wget https://github.com/kingdee/openclaw-yzj/archive/refs/heads/develop.zip
 
 # 下载特定标签/版本
-wget https://github.com/JanonAI/openclaw-yzj/archive/refs/tags/v2026.3.6.zip
+wget https://github.com/kingdee/openclaw-yzj/archive/refs/tags/v2026.3.6.zip
 
 # 安装
 openclaw plugins install ./develop.zip  # 或 ./v2026.3.6.zip

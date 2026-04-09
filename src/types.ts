@@ -140,6 +140,7 @@ export interface YZJLogger {
 
 export interface YZJInboundStatusPatch {
   running?: boolean;
+  connected?: boolean;
   lastError?: string | null;
   lastInboundAt?: number;
   lastOutboundAt?: number;

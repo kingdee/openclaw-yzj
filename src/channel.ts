@@ -249,6 +249,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
       webhookPath: account.webhookPath ?? "/yzj/webhook",
       inboundMode: account.inboundMode,
       running: runtime?.running ?? false,
+      connected: runtime?.running ?? false,
       lastStartAt: runtime?.lastStartAt ?? null,
       lastStopAt: runtime?.lastStopAt ?? null,
       lastError: runtime?.lastError ?? null,
@@ -319,6 +320,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
               ctx.setStatus({
                 accountId: account.accountId,
                 running: true,
+                connected: true,
                 lastError: null,
               });
             },
@@ -326,6 +328,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
               ctx.setStatus({
                 accountId: account.accountId,
                 running: false,
+                connected: false,
                 lastError: message,
               });
             },
@@ -337,6 +340,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
         ctx.setStatus({
           accountId: account.accountId,
           running: account.inboundMode === "webhook",
+          connected: account.inboundMode === "webhook",
           configured: true,
           webhookPath: path,
           inboundMode: account.inboundMode,
@@ -354,6 +358,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
         ctx.setStatus({
           accountId: account.accountId,
           running: false,
+          connected: false,
           lastStopAt: Date.now(),
         });
       }
@@ -362,6 +367,7 @@ export const yzjPlugin: ChannelPlugin<ResolvedYZJAccount> = {
       ctx.setStatus({
         accountId: ctx.account.accountId,
         running: false,
+        connected: false,
         lastStopAt: Date.now(),
       });
     },
